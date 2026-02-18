@@ -4,6 +4,7 @@ import CollectionBox from "../components/CollectionBox";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const username = localStorage.getItem("authUser") || "admin";
 
   const handleAddCollection = async (data) => {
     try {
@@ -12,6 +13,12 @@ export default function Dashboard() {
     } catch (err) {
       alert("Failed to save collection");
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
+    navigate("/login");
   };
 
   const navButtons = [
@@ -34,7 +41,22 @@ export default function Dashboard() {
         <aside className="w-full lg:w-72 lg:shrink-0">
           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 lg:sticky lg:top-6">
             <h1 className="text-3xl font-bold text-emerald-400">Dashboard</h1>
-            <p className="mt-2 text-slate-400">Welcome to Thaniska Finance</p>
+            <p className="mt-2 text-slate-400">Welcome {username}</p>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate("/change-password")}
+                className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-sm"
+              >
+                Change Password
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-2 rounded-lg bg-red-500/80 text-sm font-semibold"
+              >
+                Logout
+              </button>
+            </div>
 
             <div className="mt-6 flex flex-col gap-3">
               {navButtons.map((item) => (
