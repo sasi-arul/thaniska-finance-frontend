@@ -1,0 +1,85 @@
+.report-container {
+  padding: 30px;
+  color: #fff;
+  background: #020617;
+  min-height: 100vh;
+}
+
+.report-container h2 {
+  margin-bottom: 20px;
+}
+
+.report-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.report-controls input {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  color: #020617;
+}
+
+/* .report-controls button {
+  background: #10b981;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+} */
+
+.report-controls button:hover {
+  background: #059669;
+}
+
+.total-card {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  padding: 25px;
+  border-radius: 12px;
+  width: 260px;
+  margin-bottom: 25px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.total-card p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.total-card h1 {
+  margin-top: 10px;
+  font-size: 32px;
+}
+
+.table-card {
+  background: #020617;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #1e293b;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #0f172a;
+}
+
+th, td {
+  padding: 14px;
+  text-align: left;
+}
+
+tbody tr {
+  border-top: 1px solid #1e293b;
+}
+
+tbody tr:hover {
+  background: #0f172a;
+}
