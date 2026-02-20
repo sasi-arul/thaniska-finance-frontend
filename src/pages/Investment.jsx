@@ -89,7 +89,7 @@ export default function Investment() {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full p-3 rounded-lg bg-[#081521] border border-gray-600"
+              className="investment-date-input w-full p-3 rounded-lg bg-[#081521] border border-gray-600"
             />
 
             <input

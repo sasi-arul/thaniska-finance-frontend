@@ -63,3 +63,8 @@ body {
   overflow-y: auto;
   padding-right: 10px;
 }
+
+.investment-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(81%) sepia(58%) saturate(424%) hue-rotate(94deg) brightness(96%) contrast(89%);
+  cursor: pointer;
+}
