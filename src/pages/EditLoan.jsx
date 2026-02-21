@@ -130,11 +130,40 @@ export default function EditLoan() {
     throw lastError || new Error("Unable to access camera");
   };
 
+  const getCameraErrorMessage = (error) => {
+    if (!error) return "Camera preview failed. Close other camera apps and try again.";
+    const name = error.name || "";
+    if (name === "NotAllowedError" || name === "SecurityError") {
+      return "Camera permission blocked. Allow camera access in the browser and try again.";
+    }
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+      return "No camera device found. Connect a camera and try again.";
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      return "Camera is busy or already in use by another app. Close other camera apps and try again.";
+    }
+    if (name === "OverconstrainedError") {
+      return "Camera constraints not supported. Try again or use a different camera.";
+    }
+    return "Camera preview failed. Close other camera apps and try again.";
+  };
+
   const startCamera = async (targetField) => {
     try {
       setCaptureError("");
       setCaptureField(targetField);
       setIsVideoReady(false);
+      if (!window.isSecureContext && window.location.hostname !== "localhost") {
+        setCaptureError("Camera needs HTTPS. Use https:// or run on localhost.");
+        return;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCaptureError("Camera not supported in this browser.");
+        return;
+      }
+      if (streamRef.current) {
+        stopCamera();
+      }
       const stream = await getCameraStream();
       streamRef.current = stream;
       setIsCameraOpen(true);
@@ -143,7 +172,7 @@ export default function EditLoan() {
       }, 0);
     } catch (error) {
       console.error("Camera error:", error);
-      setCaptureError("Camera preview failed. Close other camera apps and try again.");
+      setCaptureError(getCameraErrorMessage(error));
     }
   };
 

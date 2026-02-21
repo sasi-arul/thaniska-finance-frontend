@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
+import jsPDF from "jspdf";
 
 export default function CreateLoan() {
   const navigate = useNavigate();
@@ -49,6 +50,9 @@ export default function CreateLoan() {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const [showPrintOptions, setShowPrintOptions] = useState(false);
+  const [lastCreatedLoan, setLastCreatedLoan] = useState(null);
+  const [lastPayload, setLastPayload] = useState(null);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -116,11 +120,40 @@ export default function CreateLoan() {
     throw lastError || new Error("Unable to access camera");
   };
 
+  const getCameraErrorMessage = (error) => {
+    if (!error) return "Camera preview failed. Close other camera apps and try again.";
+    const name = error.name || "";
+    if (name === "NotAllowedError" || name === "SecurityError") {
+      return "Camera permission blocked. Allow camera access in the browser and try again.";
+    }
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+      return "No camera device found. Connect a camera and try again.";
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      return "Camera is busy or already in use by another app. Close other camera apps and try again.";
+    }
+    if (name === "OverconstrainedError") {
+      return "Camera constraints not supported. Try again or use a different camera.";
+    }
+    return "Camera preview failed. Close other camera apps and try again.";
+  };
+
   const startCamera = async (targetField) => {
     try {
       setCaptureError("");
       setCaptureField(targetField);
       setIsVideoReady(false);
+      if (!window.isSecureContext && window.location.hostname !== "localhost") {
+        setCaptureError("Camera needs HTTPS. Use https:// or run on localhost.");
+        return;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCaptureError("Camera not supported in this browser.");
+        return;
+      }
+      if (streamRef.current) {
+        stopCamera();
+      }
       const stream = await getCameraStream();
 
       streamRef.current = stream;
@@ -130,7 +163,7 @@ export default function CreateLoan() {
       }, 0);
     } catch (error) {
       console.error("Camera error:", error);
-      setCaptureError("Camera preview failed. Close other camera apps and try again.");
+      setCaptureError(getCameraErrorMessage(error));
     }
   };
 
@@ -241,6 +274,40 @@ export default function CreateLoan() {
     }
   };
 
+  const fileToDataUrl = (file) =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+
+  const blobToDataUrl = (blob) =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(blob);
+    });
+
+  const getPhotoDataUrl = async (loanData) => {
+    if (form.photo) {
+      return fileToDataUrl(form.photo);
+    }
+
+    const url = getAbsoluteFileUrl(loanData?.photoUrl || "");
+    if (!url) return "";
+
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) return "";
+      const blob = await res.blob();
+      return blobToDataUrl(blob);
+    } catch {
+      return "";
+    }
+  };
+
   const printLoanApplication = (loanData, payloadData) => {
     const startDate = payloadData.date || "";
     const endDate = getComputedEndDate(
@@ -334,6 +401,54 @@ export default function CreateLoan() {
     if (form.photo) {
       setTimeout(() => URL.revokeObjectURL(photoSrc), 30000);
     }
+  };
+
+  const downloadLoanPdf = async (loanData, payloadData) => {
+    const startDate = payloadData.date || "";
+    const endDate = getComputedEndDate(
+      payloadData.date,
+      payloadData.collectionType,
+      payloadData.duration
+    );
+
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Loan Application Form", 14, 16);
+
+    const photoDataUrl = await getPhotoDataUrl(loanData);
+    if (photoDataUrl) {
+      try {
+        doc.addImage(photoDataUrl, "JPEG", 150, 20, 40, 50);
+      } catch {
+        // Ignore photo if embed fails.
+      }
+    }
+
+    doc.setFontSize(11);
+    const rows = [
+      ["Loan Number", loanData?.loanNumber || payloadData.loanNumber || ""],
+      ["Name", payloadData.partyName || ""],
+      ["Father Name", payloadData.fatherName || ""],
+      ["Place", payloadData.address || ""],
+      ["Phone Number", payloadData.mobile || ""],
+      ["Aadhar Number", payloadData.aadhar || ""],
+      ["Age", String(payloadData.age || "")],
+      ["Occupation", payloadData.occupation || ""],
+      ["Loan Amount", `Rs ${payloadData.amount || ""}`],
+      ["Collection Type", payloadData.collectionType || ""],
+      ["Loan Start Date", startDate],
+      ["Loan End Date", endDate],
+    ];
+
+    let y = 30;
+    rows.forEach(([label, value]) => {
+      doc.text(`${label}:`, 14, y);
+      doc.text(String(value), 60, y);
+      y += 7;
+    });
+
+    const filename = `loan-${payloadData.loanNumber || loanData?.loanNumber || "application"}.pdf`;
+    doc.save(filename);
   };
 
   const autoEndDate = getAutoEndDate(form.date, form.collectionType);
@@ -444,9 +559,10 @@ export default function CreateLoan() {
         createdLoan = res.data;
       }
 
-      printLoanApplication(createdLoan, payload);
+      setLastCreatedLoan(createdLoan);
+      setLastPayload(payload);
+      setShowPrintOptions(true);
       alert("Loan Created Successfully");
-      navigate("/loans");
     } catch (error) {
       console.error("Full error:", error.response?.data || error.message);
       alert("Failed to create loan");
@@ -488,7 +604,6 @@ export default function CreateLoan() {
               type="file"
               name="photo"
               accept="image/*"
-              capture="environment"
               onChange={handleFileChange}
               className="
                 w-full mt-1 px-4 py-3 rounded-lg
@@ -674,6 +789,43 @@ export default function CreateLoan() {
       {captureError && (
         <div className="fixed bottom-5 right-5 z-50 bg-red-600 text-white text-sm px-4 py-2 rounded">
           {captureError}
+        </div>
+      )}
+
+      {showPrintOptions && lastPayload && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-white/20 rounded-xl p-6 text-white">
+            <h3 className="text-lg font-semibold text-emerald-300 mb-4">Loan saved</h3>
+            <p className="text-sm text-slate-300 mb-5">
+              Choose to print or save the application as PDF.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => printLoanApplication(lastCreatedLoan, lastPayload)}
+                className="w-full py-2 rounded bg-blue-500 text-white"
+              >
+                Print
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadLoanPdf(lastCreatedLoan, lastPayload)}
+                className="w-full py-2 rounded bg-emerald-500 text-black font-semibold"
+              >
+                Save as PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPrintOptions(false);
+                  navigate("/loans");
+                }}
+                className="w-full py-2 rounded bg-white/10 border border-white/20"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -120,6 +120,9 @@ export default function Investment() {
               <option value="reinvest_collection_interest">
                 Reinvest Collection Interest
               </option>
+              <option value="reinvest_advance_interest_deduction">
+                Reinvest Advance Interest Deduction
+              </option>
             </select>
 
             <button
@@ -146,6 +149,7 @@ export default function Investment() {
     reinvest_profit: "Reinvest Profit",
     reinvest_collection_principal: "Reinvest Collection Principal",
     reinvest_collection_interest: "Reinvest Collection Interest",
+    reinvest_advance_interest_deduction: "Reinvest Advance Interest Deduction",
   };
   const sourceLabel = sourceLabelMap[currentSource] || "Owner";
   const isOwner = currentSource === "owner";

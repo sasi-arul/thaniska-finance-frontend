@@ -6,7 +6,7 @@ import { DollarSign, CreditCard, Activity,Wallet,TrendingDown,TrendingUp,Banknot
 
 const Status = () => {
 
-    const [stats, setStats] = useState({
+  const [stats, setStats] = useState({
     dailyInterest: 0,
     totalInterest: 0,
     activeLoans: 0,
@@ -15,14 +15,15 @@ const Status = () => {
     totalInvestment: 0,
     totalCollection: 0,
     totalCollectionPrincipal: 0,
-    totalCollectionInterest: 0
+    totalCollectionInterest: 0,
+    totalAdvanceInterest: 0,
   });
 
   const fetchStats = async () => {
     try {
       const res = await api.get("/stats");
       console.log("Stats:", res.data);
-      setStats(res.data);
+      setStats((prev) => ({ ...prev, ...res.data }));
     } catch (error) {
       console.error("Failed to fetch stats", error);
     }
@@ -76,6 +77,13 @@ const Status = () => {
 <StatCard
   title="Total Disbursed"
   value={stats.totalDisbursed}
+  icon={DollarSign}
+  iconColor="text-emerald-400"
+  glowColor="emerald"
+/>
+<StatCard
+  title="Advance Interest Deduction"
+  value={stats.totalAdvanceInterest}
   icon={DollarSign}
   iconColor="text-emerald-400"
   glowColor="emerald"

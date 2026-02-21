@@ -35,7 +35,18 @@ export default function LoanList() {
         ? res.data.loans
         : [];
 
-    setLoans(data);
+    const sorted = [...data].sort((a, b) => {
+      const aNum = Number(a.loanNumber ?? a.loanNo ?? 0);
+      const bNum = Number(b.loanNumber ?? b.loanNo ?? 0);
+      if (Number.isFinite(aNum) && Number.isFinite(bNum)) return aNum - bNum;
+      return String(a.loanNumber ?? a.loanNo ?? "").localeCompare(
+        String(b.loanNumber ?? b.loanNo ?? ""),
+        "en",
+        { numeric: true, sensitivity: "base" }
+      );
+    });
+
+    setLoans(sorted);
   };
 
   const handleDelete = async (id) => {
@@ -54,33 +65,22 @@ export default function LoanList() {
         <table className="w-full border border-white/10 rounded-xl overflow-hidden">
           <thead className="bg-white/10">
             <tr>
-              <th className="p-3 text-left">Photo</th>
+              
               <th className="p-3 text-left">Loan No</th>
               <th className="p-3 text-left">Party</th>
-              <th className="p-3">Amount</th>
-              <th className="p-3">Collection Type</th>
-              <th className="p-3">Proof</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Actions</th>
+              <th className="p-3 text-center">Amount</th>
+              <th className="p-3 text-center">Collection Type</th>
+              <th className="p-3 text-center">Photo</th>
+              <th className="p-3 text-center">Proof</th>
+              <th className="p-3 text-center">Status</th>
+              <th className="p-3 text-center">Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {loans.map((loan) => (
               <tr key={loan._id} className="border-t border-white/10">
-                <td className="p-3">
-                  {loan.photoUrl ? (
-                    <img
-                      src={getFileUrl(loan.photoUrl)}
-                      alt={`${loan.partyName || "Party"} photo`}
-                      className="h-12 w-12 rounded-full object-cover border border-white/20"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs text-slate-300">
-                      N/A
-                    </div>
-                  )}
-                </td>
+                
                 <td className="p-3 font-mono">{loan.loanNumber}</td>
                 <td
                   className="p-3 text-emerald-400 cursor-pointer underline"
@@ -90,6 +90,32 @@ export default function LoanList() {
                 </td>
                 <td className="p-3 text-center">Rs {loan.amount}</td>
                 <td className="p-3 text-center capitalize">{loan.collectionType || "N/A"}</td>
+                <td className="p-3 text-center">
+                  {loan.photoUrl ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <img
+                        src={getFileUrl(loan.photoUrl)}
+                        alt={`${loan.partyName || "Party"} photo`}
+                        className="h-12 w-12 rounded-full object-cover border border-white/20"
+                      />
+                      <a
+                        href={getFileUrl(loan.photoUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        download
+                        className="text-blue-300 underline"
+                      >
+                        Open
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="h-12 w-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs text-slate-300">
+                        N/A
+                      </div>
+                    </div>
+                  )}
+                </td>
                 <td className="p-3 text-center">
                   {loan.proofUrl ? (
                     <a
@@ -111,19 +137,21 @@ export default function LoanList() {
                 >
                   {loan.status || "active"}
                 </td>
-                <td className="p-3 flex gap-2 justify-center">
-                  <button
-                    onClick={() => navigate(`/loans/edit/${loan._id}`)}
-                    className="px-4 py-2 rounded-lg bg-blue-500"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(loan._id)}
-                    className="px-4 py-2 rounded-lg bg-red-500"
-                  >
-                    Delete
-                  </button>
+                <td className="p-3 text-center">
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      onClick={() => navigate(`/loans/edit/${loan._id}`)}
+                      className="px-4 py-2 rounded-lg bg-blue-500"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(loan._id)}
+                      className="px-4 py-2 rounded-lg bg-red-500"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
